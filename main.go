@@ -6,26 +6,42 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"syscall"
 )
 
 func main() {
+	currentStory = new(string)
 	http.HandleFunc("/", home)
+	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/images/", serveImage)
-	log.Fatal(http.ListenAndServe("localhost:8000", nil))
+	// log.Fatal(http.ListenAndServe("0.0.0.0:3000", nil)) // "prod"
+	log.Fatal(http.ListenAndServe("localhost:8000", nil)) // dev
 }
+
+// TODO
+func upload(w http.ResponseWriter, r *http.Request) {
+	storyMutex.Lock()
+	*currentStory += r.URL.Query().Get("add")
+	storyMutex.Unlock()
+	w.Write([]byte("uploaded succesfully"))
+}
+
+// TODO: automate this somehow
+var currentStory *string
+var storyMutex sync.Mutex
 
 var templ = template.Must(template.New("calc").Parse(`<html>
 <body>
-	<img src="/images/1.jpg">
+	<p>
+	{{.}}
+	</p>
 </body>
 </html>`))
 
 func serveImage(w http.ResponseWriter, r *http.Request) {
 	// TODO url validation
-	url := r.URL
-	log.Println("url is", url)
-	p := omitSlash(url.Path)
+	p := omitSlash(r.URL.Path)
 	img, err := os.Open(p)
 	if err != nil {
 		err := err.(*os.PathError)
@@ -48,6 +64,5 @@ func omitSlash(original string) (fixed string) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-
-	templ.Execute(w, nil)
+	templ.Execute(w, *currentStory)
 }
