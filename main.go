@@ -6,12 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 	"syscall"
+
+	"github.com/esclerofilo/commonwriter/threads"
 )
 
 func main() {
-	currentStory = new(string)
 	http.HandleFunc("/", home)
 	http.HandleFunc("/upload", upload)
 	http.HandleFunc("/images/", serveImage)
@@ -19,19 +19,15 @@ func main() {
 	log.Fatal(http.ListenAndServe("localhost:8000", nil)) // dev
 }
 
-// TODO
 func upload(w http.ResponseWriter, r *http.Request) {
-	storyMutex.Lock()
-	*currentStory += r.URL.Query().Get("add")
-	storyMutex.Unlock()
+	latestStory().Append(r.URL.Query().Get("add"))
+	log.Printf("%s", latestStory())
 	w.Write([]byte("uploaded succesfully"))
 }
 
-// TODO: automate this somehow
-var currentStory *string
-var storyMutex sync.Mutex
+var initialStory threads.Node
 
-var templ = template.Must(template.New("calc").Parse(`<html>
+var templ = template.Must(template.New("story").Parse(`<html>
 <body>
 	<p>
 	{{.}}
@@ -64,5 +60,12 @@ func omitSlash(original string) (fixed string) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	templ.Execute(w, *currentStory)
+	templ.Execute(w, latestStory().String())
+}
+
+func latestStory() *threads.Node {
+	n := &initialStory
+	for ; len(n.Children()) != 0; n = n.Children()[0] {
+	}
+	return n
 }
