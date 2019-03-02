@@ -30,8 +30,13 @@ var initialStory threads.Node
 var templ = template.Must(template.New("story").Parse(`<html>
 <body>
 	<p>
-	{{.}}
+		{{.}}
 	</p>
+	<footer>
+		The source code for this
+		app is available in 
+		<a href="https://github.com/esclerofilo/commonwriter">Github</a>
+	</footer>
 </body>
 </html>`))
 
