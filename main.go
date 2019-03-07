@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"syscall"
 
 	"github.com/esclerofilo/commonwriter/threads"
@@ -57,7 +60,40 @@ func omitSlash(original string) (fixed string) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	templ.Execute(w, latestStory())
+	path := r.URL.Path
+	story, err := lookupStory(path)
+	if err != nil {
+		http.Error(w, "Error 404: Story not found", http.StatusNotFound)
+		return
+	}
+	templ.Execute(w, story)
+}
+
+func lookupStory(urlpath string) (*threads.Node, error) {
+	// TODO join the two for loops, because creating a slice is redundant
+	split := strings.Split(urlpath, "/")
+	indices := make([]int, 0, len(split))
+	for _, s := range split {
+		if s == "" {
+			continue
+		}
+		i, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, fmt.Errorf("lookupStory: %s can't be converted to int", s)
+		}
+		indices = append(indices, i)
+	}
+
+	n := &initialStory
+	for _, i := range indices {
+		n = n.Children()[i] // TODO out-of-bounds checking
+		/*
+			if !ok {
+				return nil, fmt.Errorf("%v not a valid story path (yet)", path)
+			}
+		*/
+	}
+	return n, nil
 }
 
 func latestStory() *threads.Node {
