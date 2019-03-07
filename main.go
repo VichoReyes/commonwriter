@@ -20,7 +20,10 @@ func main() {
 }
 
 func upload(w http.ResponseWriter, r *http.Request) {
-	latestStory().Append(r.URL.Query().Get("add"))
+	content := r.URL.Query().Get("content")
+	author := r.URL.Query().Get("author")
+	title := r.URL.Query().Get("title")
+	latestStory().Append(content, author, title)
 	log.Printf("%s", latestStory())
 	w.Write([]byte("uploaded succesfully"))
 }
@@ -54,7 +57,7 @@ func omitSlash(original string) (fixed string) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	templ.Execute(w, latestStory().String())
+	templ.Execute(w, latestStory())
 }
 
 func latestStory() *threads.Node {

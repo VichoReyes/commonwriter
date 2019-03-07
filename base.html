@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>HOLI</title>
+        <title>{{.Title}}</title>
     </head>
     <body>
         <p>
-            {{.}}
+            {{.Content}}
         </p>
+        Authors:
+        <ul>
+            {{range $key, $value := .Authors}}
+                <li>{{$key}}</li>
+            {{end}}
+        </ul>
         <footer>
             The source code for this
             app is available in 

@@ -9,12 +9,14 @@ type Node struct {
 	content string // TODO turn into diff
 	// children map[int]*Node
 	children []*Node
+	Title    string
+	Authors  map[string]bool
 	sync.Mutex
 }
 
-func (n *Node) String() string {
-	n.Lock()
-	defer n.Unlock()
+// Content returns the whole story
+// TODO change signature to HTML to allow some markup
+func (n *Node) Content() string {
 	return n.content
 }
 
@@ -33,11 +35,25 @@ func (n *Node) Children() []*Node {
 	return n.children
 }
 
-// Append makes a node n get a child with content succesor
-func (n *Node) Append(succesor string) {
+// Append makes a node n get a child with content, author and title
+func (n *Node) Append(content, author, title string) {
 	var new Node
-	new.content = succesor
+	new.content = content
+	new.Authors = cloneSet(n.Authors, author)
+	new.Title = title
 	n.Lock()
 	n.children = append(n.children, &new)
 	n.Unlock()
+}
+
+func cloneSet(old map[string]bool, elem string) map[string]bool {
+	if old[elem] { // old already has elem
+		return old
+	}
+	ret := make(map[string]bool)
+	for k := range old {
+		ret[k] = true
+	}
+	ret[elem] = true
+	return ret
 }
