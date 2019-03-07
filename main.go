@@ -27,18 +27,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 var initialStory threads.Node
 
-var templ = template.Must(template.New("story").Parse(`<html>
-<body>
-	<p>
-		{{.}}
-	</p>
-	<footer>
-		The source code for this
-		app is available in 
-		<a href="https://github.com/esclerofilo/commonwriter">Github</a>
-	</footer>
-</body>
-</html>`))
+var templ = template.Must(template.ParseFiles("base.html"))
 
 func serveImage(w http.ResponseWriter, r *http.Request) {
 	// TODO url validation
