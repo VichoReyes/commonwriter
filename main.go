@@ -70,9 +70,8 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 func lookupStory(urlpath string) (*threads.Node, error) {
-	// TODO join the two for loops, because creating a slice is redundant
 	split := strings.Split(urlpath, "/")
-	indices := make([]int, 0, len(split))
+	n := &initialStory
 	for _, s := range split {
 		if s == "" {
 			continue
@@ -81,17 +80,11 @@ func lookupStory(urlpath string) (*threads.Node, error) {
 		if err != nil {
 			return nil, fmt.Errorf("lookupStory: %s can't be converted to int", s)
 		}
-		indices = append(indices, i)
-	}
-
-	n := &initialStory
-	for _, i := range indices {
-		n = n.Children()[i] // TODO out-of-bounds checking
-		/*
-			if !ok {
-				return nil, fmt.Errorf("%v not a valid story path (yet)", path)
-			}
-		*/
+		var ok bool
+		n, ok = n.Child(i)
+		if !ok {
+			return nil, fmt.Errorf("lookupStory: index %d too large", i)
+		}
 	}
 	return n, nil
 }

@@ -35,6 +35,14 @@ func (n *Node) Children() []*Node {
 	return n.children
 }
 
+// Child returns the child node at a certain index
+func (n *Node) Child(index int) (c *Node, ok bool) {
+	if index >= len(n.children) {
+		return nil, false
+	}
+	return n.children[index], true
+}
+
 // Append makes a node n get a child with content, author and title
 func (n *Node) Append(content, author, title string) {
 	var new Node
