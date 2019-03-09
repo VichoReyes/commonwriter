@@ -23,9 +23,13 @@ func main() {
 }
 
 func upload(w http.ResponseWriter, r *http.Request) {
-	content := r.URL.Query().Get("content")
-	author := r.URL.Query().Get("author")
-	title := r.URL.Query().Get("title")
+	content := r.FormValue("content")
+	author := r.FormValue("author")
+	title := r.FormValue("title")
+	if content == "" || author == "" || title == "" {
+		w.Write([]byte("one or more fields was empty"))
+		return
+	}
 	latestStory().Append(content, author, title)
 	log.Printf("%s", latestStory())
 	w.Write([]byte("uploaded succesfully"))
@@ -33,7 +37,7 @@ func upload(w http.ResponseWriter, r *http.Request) {
 
 var initialStory threads.Node
 
-var templ = template.Must(template.ParseFiles("base.html"))
+var templ = template.Must(template.ParseFiles("base.html", "edit.html"))
 
 func serveImage(w http.ResponseWriter, r *http.Request) {
 	// TODO url validation
@@ -66,7 +70,21 @@ func home(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error 404: Story not found", http.StatusNotFound)
 		return
 	}
-	templ.Execute(w, story)
+	context := struct {
+		*http.Request
+		*threads.Node
+	}{
+		r,
+		story,
+	}
+	switch r.URL.Query().Get("view") {
+	//	case "append":
+	//		templ.ExecuteTemplate(w, "append.html", story)
+	case "edit":
+		templ.ExecuteTemplate(w, "edit.html", context)
+	default:
+		templ.ExecuteTemplate(w, "base.html", context)
+	}
 }
 
 func lookupStory(urlpath string) (*threads.Node, error) {

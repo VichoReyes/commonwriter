@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Editing {{.Title}}</title>
+    </head>
+    <body>
+        <form action="/upload" method="POST">
+            Title:<br>
+            <input type="text" name="title" value="{{.Title}}"><br>
+            Your Name:<br>
+            <input type="text" name="author" value="Anonymous"><br>
+            The Story Content:<br>
+            <textarea name="content">{{.Content}}</textarea><br>
+            <input type="submit">
+        </form>
+        <footer>
+            The source code for this
+            app is available in 
+            <a href="https://github.com/esclerofilo/commonwriter">Github</a>
+        </footer>
+    </body>
+</html>
