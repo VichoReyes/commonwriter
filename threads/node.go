@@ -43,15 +43,18 @@ func (n *Node) Child(index int) (c *Node, ok bool) {
 	return n.children[index], true
 }
 
-// Append makes a node n get a child with content, author and title
-func (n *Node) Append(content, author, title string) {
+// Append makes a node n get a child with content, author and title.
+// It then returns the index of that child node relative to the parent.
+func (n *Node) Append(content, author, title string) int {
 	var new Node
 	new.content = content
 	new.Authors = cloneSet(n.Authors, author)
 	new.Title = title
 	n.Lock()
+	i := len(n.children)
 	n.children = append(n.children, &new)
 	n.Unlock()
+	return i
 }
 
 func cloneSet(old map[string]bool, elem string) map[string]bool {

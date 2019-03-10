@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"syscall"
@@ -16,7 +17,7 @@ import (
 
 func main() {
 	http.HandleFunc("/", home)
-	http.HandleFunc("/upload", upload)
+	http.HandleFunc("/upload/", upload)
 	http.HandleFunc("/images/", serveImage)
 	// log.Fatal(http.ListenAndServe("0.0.0.0:3000", nil)) // "prod"
 	log.Fatal(http.ListenAndServe("localhost:8000", nil)) // dev
@@ -30,14 +31,31 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("one or more fields was empty"))
 		return
 	}
-	latestStory().Append(content, author, title)
-	log.Printf("%s", latestStory())
-	w.Write([]byte("uploaded succesfully"))
+
+	// skip the "/upload/" part
+	wholePath := strings.Split(r.URL.Path, "/")
+	storyCoords := strings.Join(wholePath[2:], "/")
+
+	story, err := lookupStory(storyCoords)
+	if err != nil {
+		http.Error(w, "Error 404: Story not found", http.StatusNotFound)
+		return
+	}
+	newIndex := story.Append(content, author, title)
+	// TODO change this to a redirect
+	context := struct {
+		NewURL string
+		Title  string
+	}{
+		path.Clean("/" + storyCoords + "/" + strconv.Itoa(newIndex)),
+		title,
+	}
+	templ.ExecuteTemplate(w, "uploadSuccessful.html", context)
 }
 
 var initialStory threads.Node
 
-var templ = template.Must(template.ParseFiles("base.html", "edit.html"))
+var templ = template.Must(template.ParseFiles("base.html", "edit.html", "uploadSuccessful.html"))
 
 func serveImage(w http.ResponseWriter, r *http.Request) {
 	// TODO url validation
@@ -105,11 +123,4 @@ func lookupStory(urlpath string) (*threads.Node, error) {
 		}
 	}
 	return n, nil
-}
-
-func latestStory() *threads.Node {
-	n := &initialStory
-	for ; len(n.Children()) != 0; n = n.Children()[0] {
-	}
-	return n
 }

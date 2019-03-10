@@ -4,7 +4,7 @@
         <title>Editing {{.Title}}</title>
     </head>
     <body>
-        <form action="/upload" method="POST">
+        <form action="/upload{{.URL.Path}}" method="POST">
             Title:<br>
             <input type="text" name="title" value="{{.Title}}"><br>
             Your Name:<br>
