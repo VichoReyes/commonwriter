@@ -37,7 +37,7 @@ func (n *Node) Children() []*Node {
 
 // Child returns the child node at a certain index
 func (n *Node) Child(index int) (c *Node, ok bool) {
-	if index >= len(n.children) {
+	if index >= len(n.children) || index < 0 {
 		return nil, false
 	}
 	return n.children[index], true
