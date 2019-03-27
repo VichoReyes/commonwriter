@@ -1,70 +1,100 @@
 package threads
 
-import "sync"
+import (
+	"database/sql"
+	"log"
+
+	_ "github.com/mattn/go-sqlite3" // sqlite driver
+)
 
 // Node is an immutable snapshot of the story, like a commit
 // its Children are the story versions based on it
 // its content can be rendered using the String method
 type Node struct {
-	content string // TODO turn into diff
-	// children map[int]*Node
-	children []*Node
-	Title    string
-	Authors  map[string]bool
-	sync.Mutex
+	id    int64
+	Title string
+}
+
+var db *sql.DB
+
+func init() {
+	var err error
+	db, err = sql.Open("sqlite3", "commonwriter.db")
+	if err != nil {
+		log.Fatalf("opening database: %v", err)
+	}
+	stmt := `CREATE TABLE IF NOT EXISTS stories
+		(id INTEGER PRIMARY KEY AUTOINCREMENT,
+		title TEXT NOT NULL,
+		content TEXT NOT NULL,
+		parent_id INTEGER);`
+
+	_, err = db.Exec(stmt)
+	if err != nil {
+		log.Fatalf("opening database: %v", err)
+	}
 }
 
 // Content returns the whole story
 // TODO change signature to HTML to allow some markup
 func (n *Node) Content() string {
-	return n.content
+	stmt := "SELECT content FROM stories WHERE id = $1"
+	row := db.QueryRow(stmt, n.id)
+	var content string
+	err := row.Scan(&content)
+	if err != nil {
+		log.Panicf("on .Content: %v", err)
+	}
+	return content
 }
 
 // Children returns the list of Nodes based on n
-// no guarantees are made about their order (for now)
+// TODO stop leaking hella memory
 func (n *Node) Children() []*Node {
-	/*
-		chil := make([]*Node, len(n.children))
-		n.Lock()
-		for _, v := range n.children {
-			chil = append(chil, v)
-		}
-		n.Unlock()
-		return chil
-	*/
-	return n.children
-}
-
-// Child returns the child node at a certain index
-func (n *Node) Child(index int) (c *Node, ok bool) {
-	if index >= len(n.children) || index < 0 {
-		return nil, false
+	stmt := "SELECT id,title FROM stories WHERE parent_id = $1"
+	rows, err := db.Query(stmt, n.id)
+	if err != nil {
+		log.Panicf("on .Children query: %v", err)
 	}
-	return n.children[index], true
+	var ret []*Node
+	for rows.Next() {
+		child := new(Node)
+		err = rows.Scan(&child.id, &child.Title)
+		if err != nil {
+			log.Panicf("on .Children scan: %v", err)
+		}
+		ret = append(ret, child)
+	}
+	if err = rows.Err(); err != nil {
+		log.Panicf("on .Children scan: %v", err)
+	}
+	return ret
 }
 
 // Append makes a node n get a child with content, author and title.
-// It then returns the index of that child node relative to the parent.
-func (n *Node) Append(content, author, title string) int {
-	var new Node
-	new.content = content
-	new.Authors = cloneSet(n.Authors, author)
-	new.Title = title
-	n.Lock()
-	i := len(n.children)
-	n.children = append(n.children, &new)
-	n.Unlock()
-	return i
+// It then returns the new node's ID.
+func (n *Node) Append(content, author, title string) int64 {
+	stmt := "INSERT INTO stories VALUES ($1, $2, $3);"
+	res, err := db.Exec(stmt, title, content, n.id)
+	if err != nil {
+		log.Panicf("on .Append: %v", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		log.Panicf("on .Append: %v", err)
+	}
+	return id
 }
 
-func cloneSet(old map[string]bool, elem string) map[string]bool {
-	if old[elem] { // old already has elem
-		return old
+// Get a Node with the corresponding id
+func Get(id int64) (*Node, error) {
+	stmt := "SELECT title FROM stories WHERE id = $1"
+	row := db.QueryRow(stmt, id)
+	n := new(Node)
+	err := row.Scan(&n.Title)
+	if err != nil {
+		log.Panicf("on .Content: %v", err)
 	}
-	ret := make(map[string]bool)
-	for k := range old {
-		ret[k] = true
-	}
-	ret[elem] = true
-	return ret
+	n.id = id
+	return n, nil // TODO real error reporting
 }

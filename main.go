@@ -1,53 +1,63 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/esclerofilo/commonwriter/threads"
+	"github.com/gorilla/mux"
 )
 
 func main() {
-	http.HandleFunc("/", home)
-	http.HandleFunc("/upload/", upload)
-	http.HandleFunc("/images/", serveImage)
-	// log.Fatal(http.ListenAndServe("0.0.0.0:3000", nil)) // "prod"
-	log.Fatal(http.ListenAndServe("localhost:8000", nil)) // dev
+	r := mux.NewRouter()
+	r.HandleFunc("/", HomeHandler)
+	r.HandleFunc("/story/{key}", StoryHandler)
+	r.HandleFunc("/upload/{key}", UploadHandler)
+	r.HandleFunc("/images/", serveImage)
+	// log.Fatal(http.ListenAndServe("0.0.0.0:3000", r)) // "prod"
+	log.Fatal(http.ListenAndServe("localhost:8080", r)) // dev
 }
 
-func upload(w http.ResponseWriter, r *http.Request) {
+// HomeHandler is a handler for GET /
+func HomeHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("This is the home."))
+}
+
+// UploadHandler is a handler for POST /upload/{key}
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	content := r.FormValue("content")
-	author := r.FormValue("author")
 	title := r.FormValue("title")
-	if content == "" || author == "" || title == "" {
+	if content == "" || title == "" {
 		w.Write([]byte("one or more fields was empty"))
 		return
 	}
 
-	// skip the "/upload/" part
-	wholePath := strings.Split(r.URL.Path, "/")
-	storyCoords := strings.Join(wholePath[2:], "/")
+	keystring, ok := mux.Vars(r)["key"]
+	if !ok {
+		log.Panic("key missing")
+	}
+	key, err := strconv.ParseInt(keystring, 10, 64)
+	if err != nil {
+		log.Panic(err)
+	}
 
-	story, err := lookupStory(storyCoords)
+	story, err := threads.Get(key)
 	if err != nil {
 		http.Error(w, "Error 404: Story not found", http.StatusNotFound)
 		return
 	}
-	newIndex := story.Append(content, author, title)
+	newID := story.Append(content, "", title)
 	// TODO change this to a redirect
 	context := struct {
 		NewURL string
 		Title  string
 	}{
-		path.Clean("/" + storyCoords + "/" + strconv.Itoa(newIndex)),
+		"/story/" + strconv.FormatInt(newID, 10),
 		title,
 	}
 	templ.ExecuteTemplate(w, "uploadSuccessful.html", context)
@@ -81,13 +91,23 @@ func omitSlash(original string) (fixed string) {
 	return original
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-	story, err := lookupStory(path)
+// StoryHandler is a handler for GET /story/{key}
+func StoryHandler(w http.ResponseWriter, r *http.Request) {
+	keystring, ok := mux.Vars(r)["key"]
+	if !ok {
+		log.Panic("key missing")
+	}
+	key, err := strconv.ParseInt(keystring, 10, 64)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	story, err := threads.Get(key)
 	if err != nil {
 		http.Error(w, "Error 404: Story not found", http.StatusNotFound)
 		return
 	}
+
 	context := struct {
 		*http.Request
 		*threads.Node
@@ -103,24 +123,4 @@ func home(w http.ResponseWriter, r *http.Request) {
 	default:
 		templ.ExecuteTemplate(w, "base.html", context)
 	}
-}
-
-func lookupStory(urlpath string) (*threads.Node, error) {
-	split := strings.Split(urlpath, "/")
-	n := &initialStory
-	for _, s := range split {
-		if s == "" {
-			continue
-		}
-		i, err := strconv.Atoi(s)
-		if err != nil {
-			return nil, fmt.Errorf("lookupStory: %s can't be converted to int", s)
-		}
-		var ok bool
-		n, ok = n.Child(i)
-		if !ok {
-			return nil, fmt.Errorf("lookupStory: index %d too large", i)
-		}
-	}
-	return n, nil
 }
