@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Common Writer</title>
+    </head>
+    <body>
+        <p>
+            A web app to write stories collaboratively
+        </p>
+        <p>Check out some stories:</p>
+        <ul>
+            {{range .}}
+                <li><a href="/story/{{.ID}}">{{.Title}}</a></li>
+            {{end}}
+        </ul>
+        <a href="/story/1?view=edit">Or create your own!</a>
+        <footer>
+            The source code for this
+            app is available in 
+            <a href="https://github.com/esclerofilo/commonwriter">Github</a>
+        </footer>
+    </body>
+</html>
