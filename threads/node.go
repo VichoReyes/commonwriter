@@ -11,7 +11,7 @@ import (
 // its Children are the story versions based on it
 // its content can be rendered using the String method
 type Node struct {
-	id    int64
+	ID    int64
 	Title string
 }
 
@@ -39,7 +39,7 @@ func init() {
 // TODO change signature to HTML to allow some markup
 func (n *Node) Content() string {
 	stmt := "SELECT content FROM stories WHERE id = $1"
-	row := db.QueryRow(stmt, n.id)
+	row := db.QueryRow(stmt, n.ID)
 	var content string
 	err := row.Scan(&content)
 	if err != nil {
@@ -52,14 +52,14 @@ func (n *Node) Content() string {
 // TODO stop leaking hella memory
 func (n *Node) Children() []*Node {
 	stmt := "SELECT id,title FROM stories WHERE parent_id = $1"
-	rows, err := db.Query(stmt, n.id)
+	rows, err := db.Query(stmt, n.ID)
 	if err != nil {
 		log.Panicf("on .Children query: %v", err)
 	}
 	var ret []*Node
 	for rows.Next() {
 		child := new(Node)
-		err = rows.Scan(&child.id, &child.Title)
+		err = rows.Scan(&child.ID, &child.Title)
 		if err != nil {
 			log.Panicf("on .Children scan: %v", err)
 		}
@@ -75,7 +75,7 @@ func (n *Node) Children() []*Node {
 // It then returns the new node's ID.
 func (n *Node) Append(content, author, title string) int64 {
 	stmt := "INSERT INTO stories VALUES ($1, $2, $3);"
-	res, err := db.Exec(stmt, title, content, n.id)
+	res, err := db.Exec(stmt, title, content, n.ID)
 	if err != nil {
 		log.Panicf("on .Append: %v", err)
 	}
@@ -95,6 +95,6 @@ func Get(id int64) (*Node, error) {
 	if err != nil {
 		log.Panicf("on .Content: %v", err)
 	}
-	n.id = id
+	n.ID = id
 	return n, nil // TODO real error reporting
 }
