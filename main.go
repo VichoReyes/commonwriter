@@ -44,7 +44,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	key, err := strconv.ParseInt(keystring, 10, 64)
 	if err != nil {
-		log.Panic(err)
+		http.Error(w, "Error 404: Story not found", http.StatusNotFound)
+		return
 	}
 
 	story, err := threads.Get(key)
@@ -100,7 +101,8 @@ func StoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	key, err := strconv.ParseInt(keystring, 10, 64)
 	if err != nil {
-		log.Print(err)
+		http.Error(w, "Error 404: Story not found", http.StatusNotFound)
+		return
 	}
 
 	story, err := threads.Get(key)

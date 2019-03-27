@@ -96,10 +96,10 @@ func Get(id int64) (*Node, error) {
 	n := new(Node)
 	err := row.Scan(&n.Title)
 	if err != nil {
-		log.Panicf("on .Content: %v", err)
+		return nil, err
 	}
 	n.ID = id
-	return n, nil // TODO real error reporting
+	return n, nil
 }
 
 // Roots returns all first drafts
