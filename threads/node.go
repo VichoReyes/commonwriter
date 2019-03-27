@@ -27,7 +27,10 @@ func init() {
 		(id INTEGER PRIMARY KEY AUTOINCREMENT,
 		title TEXT NOT NULL,
 		content TEXT NOT NULL,
-		parent_id INTEGER);`
+		parent_id INTEGER);
+		
+		REPLACE INTO stories (id, title, content, parent_id)
+		VALUES (1, "", "", null);`
 
 	_, err = db.Exec(stmt)
 	if err != nil {
@@ -74,7 +77,7 @@ func (n *Node) Children() []*Node {
 // Append makes a node n get a child with content, author and title.
 // It then returns the new node's ID.
 func (n *Node) Append(content, author, title string) int64 {
-	stmt := "INSERT INTO stories VALUES ($1, $2, $3);"
+	stmt := "INSERT INTO stories VALUES (null, $1, $2, $3);"
 	res, err := db.Exec(stmt, title, content, n.ID)
 	if err != nil {
 		log.Panicf("on .Append: %v", err)
@@ -97,4 +100,11 @@ func Get(id int64) (*Node, error) {
 	}
 	n.ID = id
 	return n, nil // TODO real error reporting
+}
+
+// Roots returns all first drafts
+func Roots() []*Node {
+	var n Node
+	n.ID = 1
+	return n.Children()
 }

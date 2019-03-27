@@ -25,7 +25,8 @@ func main() {
 
 // HomeHandler is a handler for GET /
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("This is the home."))
+	context := threads.Roots()
+	templ.ExecuteTemplate(w, "home.html", context)
 }
 
 // UploadHandler is a handler for POST /upload/{key}
@@ -65,7 +66,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 var initialStory threads.Node
 
-var templ = template.Must(template.ParseFiles("base.html", "edit.html", "uploadSuccessful.html"))
+var templ = template.Must(template.ParseFiles("base.html", "edit.html", "uploadSuccessful.html", "home.html"))
 
 func serveImage(w http.ResponseWriter, r *http.Request) {
 	// TODO url validation
@@ -99,7 +100,7 @@ func StoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	key, err := strconv.ParseInt(keystring, 10, 64)
 	if err != nil {
-		log.Panic(err)
+		log.Print(err)
 	}
 
 	story, err := threads.Get(key)
@@ -109,10 +110,8 @@ func StoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	context := struct {
-		*http.Request
 		*threads.Node
 	}{
-		r,
 		story,
 	}
 	switch r.URL.Query().Get("view") {

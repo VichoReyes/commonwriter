@@ -4,11 +4,9 @@
         <title>Editing {{.Title}}</title>
     </head>
     <body>
-        <form action="/upload{{.URL.Path}}" method="POST">
+        <form action="/upload/{{.ID}}" method="POST">
             Title:<br>
             <input type="text" name="title" value="{{.Title}}"><br>
-            Your Name:<br>
-            <input type="text" name="author" value="Anonymous"><br>
             The Story Content:<br>
             <textarea name="content">{{.Content}}</textarea><br>
             <input type="submit">
