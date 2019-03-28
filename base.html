@@ -4,11 +4,24 @@
         <title>{{.Title}}</title>
     </head>
     <body>
+        <h1>
+            {{.Title}}
+        </h1>
         <p>
             {{.Content}}
         </p>
-        <p><a href="?view=edit">Edit This Story!</a></p>
-        Derivatives of this story snapshot: TODO
+        <h3><a href="?view=edit">Edit This Story!</a></h3>
+        Derivatives of this story snapshot:
+        <ul>
+            {{range .Children}}
+                <li><a href="/story/{{.ID}}">{{.Title}}</a></li>
+            {{else}}
+                <p>
+                    Oops! it looks like this story snapshot doesn't have any derivatives.
+                    Maybe you could create the first one?
+                </p>
+            {{end}}
+        </ul>
         <footer>
             The source code for this
             app is available in 
